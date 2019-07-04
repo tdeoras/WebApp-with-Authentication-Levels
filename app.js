@@ -5,7 +5,8 @@ const ejs = require("ejs");
 require('dotenv').config();
 
 const app = express();
-const md5 = require("md5");
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
 
 //console.log(process.env.SECRET);
 
@@ -54,24 +55,31 @@ res.render("register");
 
 app.post("/register",function(req,res){
 
-let newUser = new User({
 
-email : req.body.username,
-password : md5(req.body.password)
+  bcrypt.hash(req.body.password, saltRounds, function(err, hash) {
 
-});
+    let newUser = new User({
 
-newUser.save(function(err){
+    email : req.body.username,
+    password : hash
 
-if(err){
+    });
 
-  console.log(err);
-}else{
+    newUser.save(function(err){
 
-  res.render("secrets");
-}
+    if(err){
 
-});
+      console.log(err);
+    }else{
+
+      res.render("secrets");
+    }
+
+    });
+
+  });
+
+
 
 
 
@@ -80,8 +88,11 @@ if(err){
 
 app.post("/login",function(req,res){
 
+
+
+
 const username = req.body.username;
-const password = md5(req.body.password);
+const password = req.body.password;
 
 User.findOne({"email" : username},function(err,result){
 
@@ -89,10 +100,15 @@ if(err){
   console.log(err);
 }else{
   if(result){
-    if(result.password === password){
 
-      res.render("secrets");
-    }
+    bcrypt.compare(password, result.password, function(err, result1) {
+
+      if (result1 === true){
+        res.render("secrets");
+      }
+});
+
+
 
   }
 }
